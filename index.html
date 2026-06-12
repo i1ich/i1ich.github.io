@@ -1,15 +1,405 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Bot Web Interface</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/static/script.js" defer></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Ilia Doinikov · Senior Java / AWS Engineer</title>
+<meta name="description" content="Ilia Doinikov — Senior Software Engineer specializing in Java, AWS and LLM integration. Builder of PhotoList LATAM and Cobro QR. Montevideo, Uruguay." />
+<meta name="author" content="Ilia Doinikov" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23f2a900'/%3E%3Ctext x='50' y='70' font-size='58' font-family='Georgia,serif' font-weight='700' text-anchor='middle' fill='%2314181f'%3EiD%3C/text%3E%3C/svg%3E" />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Ilia Doinikov · Senior Java / AWS Engineer" />
+<meta property="og:description" content="Senior Software Engineer — Java, AWS, LLM integration. Shipped PhotoList LATAM solo, end-to-end." />
+<meta property="og:url" content="https://i1ich.github.io/" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --ink:#0e1117;
+    --ink-2:#161b24;
+    --paper:#0b0e14;
+    --surface:#141a23;
+    --surface-2:#1b232f;
+    --text:#e8eaed;
+    --muted:#9aa3af;
+    --faint:#6b7280;
+    --celeste:#5aa0e0;        /* cool structural accent */
+    --celeste-soft:#16263a;
+    --sol:#f2a900;            /* warm amber — the one bold accent */
+    --sol-ink:#3a2a00;
+    --line:#222a36;
+    --line-2:#2c3644;
+    --good:#3ec07a;
+    --radius:18px;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 20px 50px -30px rgba(0,0,0,.7);
+    --display:"Bricolage Grotesque", system-ui, sans-serif;
+    --body:"Inter", system-ui, sans-serif;
+    --mono:"JetBrains Mono", ui-monospace, monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1100px 600px at 78% -8%, rgba(242,169,0,.10), transparent 60%),
+      radial-gradient(900px 600px at 8% 0%, rgba(90,160,224,.10), transparent 55%),
+      var(--paper);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.05}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+  .eyebrow{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--sol)}
+  .muted{color:var(--muted)}
+  :focus-visible{outline:3px solid var(--sol);outline-offset:3px;border-radius:8px}
+
+  /* ---------- Nav ---------- */
+  nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);
+      background:rgba(11,14,20,.72);border-bottom:1px solid var(--line)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:62px;max-width:1040px;margin:0 auto;padding:0 22px}
+  .brand{display:flex;align-items:center;gap:11px;font-family:var(--display);font-weight:800;font-size:16px}
+  .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(150deg,#ffd35e,var(--sol));
+        color:var(--sol-ink);display:grid;place-items:center;font-size:14px;font-weight:800;box-shadow:0 6px 16px -8px var(--sol)}
+  .nav-links{display:flex;gap:6px;align-items:center}
+  .nav-links a{font-size:14px;color:var(--muted);padding:8px 12px;border-radius:9px;font-weight:500}
+  .nav-links a:hover{color:var(--text);background:var(--surface)}
+  .nav-cta{color:var(--sol-ink)!important;background:var(--sol);font-weight:700!important}
+  .nav-cta:hover{filter:brightness(1.04);background:var(--sol)!important;color:var(--sol-ink)!important}
+  @media(max-width:620px){.nav-links a.hide-sm{display:none}}
+
+  /* ---------- Hero ---------- */
+  header.hero{padding:74px 0 30px}
+  .hero-grid{display:grid;grid-template-columns:1fr;gap:30px}
+  @media(min-width:820px){.hero-grid{grid-template-columns:1.45fr .55fr;align-items:center}}
+  .avail{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
+         background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px;margin-bottom:20px}
+  .pulse{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(62,192,122,.6);animation:p 2.4s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(62,192,122,.55)}70%{box-shadow:0 0 0 9px rgba(62,192,122,0)}100%{box-shadow:0 0 0 0 rgba(62,192,122,0)}}
+  h1.name{font-size:clamp(38px,7.5vw,64px)}
+  .role{font-family:var(--display);font-weight:700;font-size:clamp(18px,3.2vw,24px);color:var(--sol);margin-top:10px}
+  .loc{margin-top:14px;color:var(--muted);font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:4px;height:4px;border-radius:50%;background:var(--faint)}
+  .pitch{margin-top:22px;font-size:clamp(16px,2.2vw,18.5px);color:#c7ccd4;max-width:56ch}
+  .pitch b{color:var(--text);font-weight:600}
+  .cta-row{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:600;
+       border:1px solid var(--line-2);background:var(--surface);color:var(--text);transition:transform .12s,border-color .12s,background .12s}
+  .btn:hover{transform:translateY(-2px);border-color:#3a4658}
+  .btn-sol{background:var(--sol);border-color:var(--sol);color:var(--sol-ink)}
+  .btn-sol:hover{filter:brightness(1.04)}
+  .btn svg{width:18px;height:18px}
+
+  /* portrait card */
+  .id-card{background:linear-gradient(160deg,var(--surface),var(--surface-2));border:1px solid var(--line);
+           border-radius:22px;padding:22px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .id-card::before{content:"";position:absolute;inset:0;background:radial-gradient(400px 200px at 80% 0%,rgba(242,169,0,.12),transparent 60%);pointer-events:none}
+  .id-photo{width:88px;height:88px;border-radius:18px;background:linear-gradient(150deg,#ffd35e,var(--sol));
+            color:var(--sol-ink);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:34px;
+            box-shadow:0 10px 26px -12px var(--sol)}
+  .id-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+  .stat{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:13px;padding:13px}
+  .stat .n{font-family:var(--display);font-weight:800;font-size:23px;color:var(--text)}
+  .stat .l{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+
+  /* ---------- Sections ---------- */
+  section{padding:54px 0;border-top:1px solid var(--line)}
+  .sec-head{margin-bottom:30px}
+  .sec-head h2{font-size:clamp(26px,4.5vw,34px);margin-top:8px}
+  .sec-head p{color:var(--muted);margin:10px 0 0;max-width:60ch}
+
+  /* projects */
+  .projects{display:grid;grid-template-columns:1fr;gap:20px}
+  @media(min-width:760px){.projects{grid-template-columns:1fr 1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;
+        display:flex;flex-direction:column;transition:transform .15s,border-color .15s;position:relative;overflow:hidden}
+  .card:hover{transform:translateY(-4px);border-color:var(--line-2)}
+  .card.feat{grid-column:1/-1}
+  @media(min-width:760px){.card.feat{display:grid;grid-template-columns:1.3fr 1fr;gap:30px;align-items:center}}
+  .card .flag{position:absolute;top:0;right:0;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;
+              text-transform:uppercase;background:var(--celeste-soft);color:var(--celeste);padding:6px 12px;border-bottom-left-radius:12px}
+  .card h3{font-size:22px;display:flex;align-items:center;gap:10px}
+  .card .sub{color:var(--muted);font-size:14.5px;margin-top:10px}
+  .card .sub b{color:#cdd2da;font-weight:600}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+  .tag{font-family:var(--mono);font-size:11.5px;color:var(--muted);background:rgba(255,255,255,.03);
+       border:1px solid var(--line);border-radius:7px;padding:5px 9px}
+  .card-cta{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+  .lnk{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;padding:9px 14px;border-radius:10px;
+       border:1px solid var(--line-2);background:var(--ink-2)}
+  .lnk:hover{border-color:#3a4658;color:#fff}
+  .lnk.go{background:var(--sol);border-color:var(--sol);color:var(--sol-ink)}
+  .lnk svg{width:15px;height:15px}
+
+  /* demo glass for featured */
+  .demo-glass{background:linear-gradient(165deg,#0e1521,#0b1018);border:1px solid var(--line-2);border-radius:14px;
+              padding:18px;font-family:var(--mono);font-size:12.5px;color:var(--muted);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+  .demo-glass .ph{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .demo-glass .ph i{width:38px;height:38px;border-radius:10px;background:#1b2433;display:grid;place-items:center;font-style:normal;font-size:18px}
+  .demo-glass .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .demo-glass .row:last-child{border:none}
+  .demo-glass .v{color:var(--text)}
+  .demo-glass .conf{color:var(--good)}
+  .demo-glass .ml{margin-top:14px;text-align:center;background:var(--sol);color:var(--sol-ink);font-family:var(--body);
+                  font-weight:700;border-radius:9px;padding:10px;font-size:13px}
+
+  /* skills */
+  .skill-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .skill{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .skill h4{margin:0 0 10px;font-family:var(--display);font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--sol)}
+  .skill ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:7px}
+  .skill li{font-size:13px;color:#cdd2da;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:7px;padding:5px 9px}
+
+  /* experience */
+  .xp{display:flex;gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px}
+  .xp .when{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;flex:0 0 auto;padding-top:4px}
+  .xp h3{font-size:19px}
+  .xp .co{color:var(--sol);font-weight:600}
+  .xp p{color:var(--muted);font-size:14.5px;margin:10px 0 0}
+  @media(max-width:560px){.xp{flex-direction:column;gap:8px}}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:50px 0 60px;text-align:center}
+  footer h2{font-size:clamp(24px,4vw,32px)}
+  footer p{color:var(--muted);max-width:46ch;margin:14px auto 0}
+  .foot-links{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+  .copy{margin-top:40px;font-size:12.5px;color:var(--faint);font-family:var(--mono)}
+
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
-    <h1>Telegram Bot Web Interface</h1>
-    <button id="lsButton">List Directory</button>
-    <div id="result"></div>
+
+<nav>
+  <div class="nav-in">
+    <a class="brand" href="#top"><span class="mark">iD</span> Ilia&nbsp;Doinikov</a>
+    <div class="nav-links">
+      <a href="#work" class="hide-sm">Work</a>
+      <a href="#skills" class="hide-sm">Skills</a>
+      <a href="#contact" class="nav-cta">Get in touch</a>
+    </div>
+  </div>
+</nav>
+
+<a id="top"></a>
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="avail"><span class="pulse"></span> Open to senior backend / cloud roles · remote-first</div>
+        <div class="eyebrow">Senior Software Engineer</div>
+        <h1 class="name">Ilia Doinikov</h1>
+        <div class="role">Java · AWS · LLM Integration</div>
+        <div class="loc">📍 Montevideo, Uruguay <span class="dot"></span> open to relocation <span class="dot"></span> 3.5+ years</div>
+        <p class="pitch">I design and ship <b>cloud-native systems that serve millions</b> — and I take products the whole way, from an architecture sketch to a deployed, monitored service. Most recently I built <b>PhotoList LATAM</b> solo: a serverless AI product, end-to-end, in three weeks.</p>
+        <div class="cta-row">
+          <a class="btn btn-sol" href="#work">View my work
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn" href="https://www.linkedin.com/in/ilia-doinikov-d" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 0 5 8.5a2.5 2.5 0 0 0-.02-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21H21.4v-5.6c0-1.34-.02-3.06-1.87-3.06-1.87 0-2.16 1.46-2.16 2.96V21H13.6V9z"/></svg>
+            LinkedIn
+          </a>
+          <a class="btn" href="https://github.com/i1ich" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49l-.01-1.7c-2.78.62-3.37-1.21-3.37-1.21-.46-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.57 2.34 1.12 2.91.86.09-.66.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05a9.940 9.94 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9l-.01 2.81c0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
+            GitHub
+          </a>
+        </div>
+      </div>
+
+      <aside class="id-card">
+        <div class="id-photo">iD</div>
+        <div class="id-stats">
+          <div class="stat"><div class="n">3.5+</div><div class="l">years building enterprise systems</div></div>
+          <div class="stat"><div class="n">2</div><div class="l">products shipped solo, end-to-end</div></div>
+          <div class="stat"><div class="n">~$0</div><div class="l">monthly cost — serverless AWS</div></div>
+          <div class="stat"><div class="n">3&nbsp;wks</div><div class="l">idea → live AI product</div></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</header>
+
+<section id="work">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Selected work</div>
+      <h2>Things I built and shipped</h2>
+      <p>Not toy demos — products that run in production. The code, the infrastructure, and the hard product calls are all mine.</p>
+    </div>
+
+    <div class="projects">
+
+      <!-- Featured: PhotoList LATAM -->
+      <article class="card feat">
+        <div>
+          <span class="flag">Live product</span>
+          <h3>PhotoList LATAM</h3>
+          <div class="sub"><b>Photograph an item → AI identifies it → one click to its resale prices on MercadoLibre.</b> A serverless AI product for Latin America's dominant used-goods marketplace — architected, built and deployed solo in three weeks.</div>
+          <div class="tags">
+            <span class="tag">Java 21</span>
+            <span class="tag">AWS Lambda</span>
+            <span class="tag">API Gateway</span>
+            <span class="tag">OpenAI Vision</span>
+            <span class="tag">DynamoDB</span>
+            <span class="tag">S3 presigned</span>
+            <span class="tag">React + Vite PWA</span>
+            <span class="tag">AWS CDK</span>
+            <span class="tag">GitHub Actions</span>
+          </div>
+          <div class="card-cta">
+            <a class="lnk go" href="https://d1qbetwmt1ueqv.cloudfront.net" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17 17 7M9 7h8v8"/></svg>
+              Live demo
+            </a>
+            <a class="lnk" href="https://github.com/i1ich/photolist-latam" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49l-.01-1.7c-2.78.62-3.37-1.21-3.37-1.21-.46-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.57 2.34 1.12 2.91.86.09-.66.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05a9.94 9.94 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9l-.01 2.81c0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
+              Source + README
+            </a>
+          </div>
+        </div>
+        <div class="demo-glass" aria-hidden="true">
+          <div class="ph"><i>📷</i><div>Vision analysis<br><span style="font-size:11px">photolist · result</span></div></div>
+          <div class="row"><span>Item</span><span class="v">Laptop</span></div>
+          <div class="row"><span>Brand</span><span class="v">Apple</span></div>
+          <div class="row"><span>Category</span><span class="v">Electronics</span></div>
+          <div class="row"><span>Confidence</span><span class="conf">90%</span></div>
+          <div class="ml">Ver precios en MercadoLibre →</div>
+        </div>
+      </article>
+
+      <!-- Cobro QR -->
+      <article class="card">
+        <span class="flag">Try it now</span>
+        <h3>Cobro QR · Uruguay</h3>
+        <div class="sub">A zero-backend tool so Uruguayans get paid <b>without dictating their account number</b>. Fill your bank details once, generate a QR, share it — the payer scans, taps to copy, and transfers from their own bank. All state lives in the URL; nothing is stored.</div>
+        <div class="tags">
+          <span class="tag">Vanilla JS</span>
+          <span class="tag">Single file</span>
+          <span class="tag">No backend</span>
+          <span class="tag">QR generation</span>
+          <span class="tag">PWA-ready</span>
+        </div>
+        <div class="card-cta">
+          <a class="lnk go" href="./cobro-qr.html" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            Open the live tool
+          </a>
+        </div>
+      </article>
+
+      <!-- Caterpillar / day job framed as work -->
+      <article class="card">
+        <span class="flag">Day job</span>
+        <h3>Enterprise systems @ Caterpillar</h3>
+        <div class="sub">Senior Software Engineer building <b>high-availability Java services on AWS</b> for mission-critical systems used by millions — real-time analytics, large-scale data processing, and cost/latency optimization, with LLM integration in the mix.</div>
+        <div class="tags">
+          <span class="tag">Java</span>
+          <span class="tag">EC2 · Lambda · RDS</span>
+          <span class="tag">S3 · API Gateway</span>
+          <span class="tag">CI/CD</span>
+          <span class="tag">LLM integration</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Toolbox</div>
+      <h2>What I work with</h2>
+      <p>Deep in the Java + AWS backend world, comfortable across the full stack, and increasingly building LLM-powered pipelines.</p>
+    </div>
+    <div class="skill-grid">
+      <div class="skill">
+        <h4>Languages</h4>
+        <ul><li>Java (expert)</li><li>Python</li><li>TypeScript</li><li>C#</li><li>C++</li></ul>
+      </div>
+      <div class="skill">
+        <h4>Backend &amp; Cloud</h4>
+        <ul><li>AWS Lambda</li><li>API Gateway</li><li>DynamoDB</li><li>S3</li><li>RDS</li><li>CloudFront</li><li>SSM</li><li>AWS CDK</li><li>Serverless</li><li>Microservices</li></ul>
+      </div>
+      <div class="skill">
+        <h4>AI / LLM</h4>
+        <ul><li>Vision models</li><li>Structured output</li><li>OAuth-secured pipelines</li><li>Token caching</li></ul>
+      </div>
+      <div class="skill">
+        <h4>Frontend</h4>
+        <ul><li>React</li><li>TypeScript</li><li>Vite</li><li>PWA</li></ul>
+      </div>
+      <div class="skill">
+        <h4>Practices</h4>
+        <ul><li>CI/CD (GitHub Actions)</li><li>IaC</li><li>JUnit 5</li><li>Cucumber</li><li>Performance profiling</li><li>Secure coding</li></ul>
+      </div>
+      <div class="skill">
+        <h4>Foundations</h4>
+        <ul><li>Algorithms &amp; data structures</li><li>Distributed systems</li><li>Applied math (B.Sc.)</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="experience">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Background</div>
+      <h2>Experience</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="xp">
+        <div class="when">Nov 2022 — now</div>
+        <div>
+          <h3>Senior Software Engineer · <span class="co">Caterpillar Inc.</span></h3>
+          <p>Remote. Promoted to Senior in Oct 2024. Lead design and implementation of scalable, high-availability web apps and backend services on AWS, supporting large-scale data processing and real-time capabilities for millions of users — while driving down operational cost and improving stability.</p>
+        </div>
+      </div>
+      <div class="xp">
+        <div class="when">2021 — 2022</div>
+        <div>
+          <h3>Trainee / Junior Engineer · <span class="co">EPAM Systems</span> &amp; University project</h3>
+          <p>Built a complete tower-defense game in Unity/C# end-to-end, and redesigned a formula-verification system's UI (MathQuill) with A/B-tested usability improvements as a graduation project.</p>
+        </div>
+      </div>
+      <div class="xp">
+        <div class="when">2018 — 2022</div>
+        <div>
+          <h3>B.Sc. Applied Mathematics &amp; Computer Science · <span class="co">SPbPU</span></h3>
+          <p>Peter the Great St. Petersburg Polytechnic University. Minor in Systems Programming.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact">
+  <div class="wrap">
+    <div class="eyebrow">Let's talk</div>
+    <h2>Building something that needs solid backend &amp; cloud?</h2>
+    <p>I'm open to senior backend / cloud engineering roles, remote-first. The fastest way to reach me is LinkedIn.</p>
+    <div class="foot-links">
+      <a class="btn btn-sol" href="https://www.linkedin.com/in/ilia-doinikov-d" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 0 5 8.5a2.5 2.5 0 0 0-.02-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21H21.4v-5.6c0-1.34-.02-3.06-1.87-3.06-1.87 0-2.16 1.46-2.16 2.96V21H13.6V9z"/></svg>
+        Connect on LinkedIn
+      </a>
+      <a class="btn" href="https://github.com/i1ich" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49l-.01-1.7c-2.78.62-3.37-1.21-3.37-1.21-.46-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.57 2.34 1.12 2.91.86.09-.66.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05a9.94 9.94 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9l-.01 2.81c0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
+        github.com/i1ich
+      </a>
+    </div>
+    <div class="copy">© 2026 Ilia Doinikov · Montevideo 🇺🇾 · built from scratch, hosted on GitHub Pages</div>
+  </div>
+</footer>
+
 </body>
 </html>

@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Cobro QR · Uruguay</title>
+<meta name="description" content="Genera un QR para que te transfieran sin dictar el número de cuenta." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<!-- QR library (browser-side import, allowed CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  /* ---------- Design tokens ---------- */
+  :root{
+    --ink:#14181f;
+    --paper:#f7f6f2;
+    --surface:#ffffff;
+    --celeste:#3b7fc4;      /* restrained UY nod, used for structure/links */
+    --celeste-soft:#e8f1fa;
+    --sol:#f2a900;          /* warm amber — the one bold accent (primary action) */
+    --sol-ink:#3a2a00;
+    --line:#e4e1d8;
+    --muted:#6b6f76;
+    --good:#1f8a52;
+    --bad:#c0392b;
+    --radius:16px;
+    --shadow:0 1px 2px rgba(20,24,31,.05), 0 12px 30px -18px rgba(20,24,31,.35);
+    --display:"Bricolage Grotesque", system-ui, sans-serif;
+    --body:"Inter", system-ui, sans-serif;
+    --mono:"JetBrains Mono", ui-monospace, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:24px 18px 64px}
+  h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:-.02em;margin:0}
+  a{color:var(--celeste)}
+  .eyebrow{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--celeste)}
+  .muted{color:var(--muted)}
+  button{font-family:var(--body);cursor:pointer}
+  :focus-visible{outline:3px solid var(--celeste);outline-offset:2px;border-radius:6px}
+
+  /* ---------- Generator layout ---------- */
+  .gen-head{display:flex;flex-direction:column;gap:6px;margin-bottom:22px}
+  .gen-head h1{font-size:clamp(28px,6vw,40px);line-height:1.02}
+  .gen-head p{margin:0;max-width:54ch}
+  .grid{display:grid;grid-template-columns:1fr;gap:22px}
+  @media(min-width:820px){.grid{grid-template-columns:1.05fr .95fr;align-items:start}}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .panel.pad{padding:20px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field label{font-size:13px;font-weight:600}
+  .field .hint{font-size:12px;color:var(--muted)}
+  input,select{
+    font-family:var(--body);font-size:15px;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    padding:11px 12px;width:100%;
+  }
+  input.mono{font-family:var(--mono);letter-spacing:.02em}
+  input:focus,select:focus{border-color:var(--celeste);outline:none;box-shadow:0 0 0 3px var(--celeste-soft)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row2 .field{margin-bottom:14px}
+
+  /* ---------- QR preview ---------- */
+  .qr-stage{position:sticky;top:18px}
+  .qr-tile{
+    background:linear-gradient(180deg,#fffdf6,#fff);
+    border:1px solid var(--line);border-radius:var(--radius);padding:22px;text-align:center;box-shadow:var(--shadow)
+  }
+  .qr-frame{
+    display:inline-block;padding:14px;background:#fff;border-radius:14px;
+    box-shadow:0 0 0 4px var(--sol), 0 0 0 5px rgba(0,0,0,.04);
+  }
+  .qr-frame img,.qr-frame canvas{display:block;width:208px;height:208px;image-rendering:pixelated}
+  .qr-empty{width:236px;height:236px;display:flex;align-items:center;justify-content:center;border:2px dashed var(--line);border-radius:14px;color:var(--muted);font-size:13px;padding:16px;text-align:center;margin:0 auto}
+  .qr-actions{display:flex;gap:10px;margin-top:16px;justify-content:center;flex-wrap:wrap}
+
+  .btn{
+    border:1px solid var(--line);background:var(--surface);color:var(--ink);
+    border-radius:11px;padding:11px 15px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px
+  }
+  .btn:hover{border-color:#cfccc2}
+  .btn-sol{background:var(--sol);border-color:var(--sol);color:var(--sol-ink)}
+  .btn-sol:hover{filter:brightness(.97)}
+  .btn-ghost{background:transparent;border-color:transparent;color:var(--celeste);padding-left:6px;padding-right:6px}
+
+  .linkbox{display:flex;gap:8px;margin-top:14px}
+  .linkbox input{font-family:var(--mono);font-size:12px}
+
+  .note{font-size:12.5px;color:var(--muted);margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+  .note b{color:var(--ink)}
+  .banner{background:#fff7e6;border:1px solid #f3dca0;color:#5a4300;border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:16px}
+  .banner b{color:#3a2a00}
+  .hint.warn{color:#9a6a00}
+  .hint.ok{color:var(--good)}
+
+  /* ---------- Payer (cobro) view ---------- */
+  .pay-body{min-height:100dvh;background:var(--paper);display:flex;align-items:flex-start;justify-content:center}
+  .pay-wrap{width:100%;max-width:460px;padding:26px 18px 48px}
+  .pay-head{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;margin-bottom:18px}
+  .sol-dot{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #ffd35e, var(--sol));box-shadow:0 6px 18px -8px var(--sol)}
+  .pay-head h1{font-size:22px;margin-top:8px}
+  .pay-head .who{font-size:15px;color:var(--muted)}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+  .card .strip{background:var(--ink);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:baseline}
+  .card .strip .bank{font-family:var(--display);font-weight:700;font-size:16px}
+  .card .strip .cur{font-family:var(--mono);font-size:12px;opacity:.7}
+  .card .amount{padding:18px;text-align:center;border-bottom:1px solid var(--line)}
+  .card .amount .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .card .amount .val{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.02em}
+
+  .alias-cta{margin:0;padding:16px 18px;background:var(--celeste-soft);border-bottom:1px solid var(--line)}
+  .alias-cta .tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--celeste)}
+
+  .rows{padding:6px 18px 14px}
+  .datarow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .datarow:last-child{border-bottom:none}
+  .datarow .k{font-size:13px;color:var(--muted);flex:0 0 auto}
+  .datarow .v{font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;word-break:break-word;flex:1 1 auto}
+  .copy{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:9px;
+    padding:7px 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;min-width:84px;justify-content:center
+  }
+  .copy.ok{background:#eafaf0;border-color:#bfe8cf;color:var(--good)}
+  .copy:hover{border-color:#cfccc2}
+
+  .copyall{width:100%;margin-top:14px;justify-content:center}
+  .steps{margin:20px 4px 0;padding:0;list-style:none;counter-reset:s}
+  .steps li{counter-increment:s;display:flex;gap:11px;font-size:13.5px;color:var(--ink);padding:7px 0}
+  .steps li::before{content:counter(s);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--celeste);background:var(--celeste-soft);width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+  .pay-foot{text-align:center;margin-top:22px;font-size:12px;color:var(--muted)}
+  .pay-foot a{font-weight:600;text-decoration:none}
+
+  .invalid{max-width:420px;margin:14vh auto;text-align:center;padding:0 20px}
+  .invalid h1{font-size:22px;margin-bottom:8px}
+
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+  <main id="app"></main>
+
+<script>
+/* =========================================================================
+   Cobro QR · Uruguay  — single-file generator + payer page (Tier 0)
+   Routing: if location.hash has "p=<base64url(json)>" -> payer view,
+            otherwise -> generator view.
+   No backend, no storage. All state lives in the URL hash.
+   ========================================================================= */
+
+/* ---- URL-safe base64 of UTF-8 JSON ---- */
+function encodePayload(obj){
+  const json = JSON.stringify(obj);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function decodePayload(s){
+  const b64 = s.replace(/-/g,'+').replace(/_/g,'/');
+  const json = decodeURIComponent(escape(atob(b64)));
+  return JSON.parse(json);
+}
+
+const BANKS = ["BROU","Itaú","Santander","Scotiabank","BBVA","HSBC","Banco Bandes",
+               "Prex","Mi Dinero","OCA Blue","Otro"];
+
+const el = (t,a={},...kids)=>{
+  const n=document.createElement(t);
+  for(const k in a){
+    if(k==="class") n.className=a[k];
+    else if(k==="html") n.innerHTML=a[k];
+    else if(k.startsWith("on")) n.addEventListener(k.slice(2),a[k]);
+    else n.setAttribute(k,a[k]);
+  }
+  kids.flat().forEach(c=>n.append(c?.nodeType?c:document.createTextNode(c)));
+  return n;
+};
+
+/* ---- clipboard with fallback ---- */
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    const ta=el("textarea",{}); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.append(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(_){}
+    ta.remove(); return ok;
+  }
+}
+
+/* =======================  GENERATOR VIEW  ======================= */
+function renderGenerator(){
+  document.title = "Cobro QR · Generador";
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  // Where the PAYER page will live. If opened locally (file://) we must NOT
+  // bake the local disk path into the QR: it leaks the path and never works
+  // on another phone (the phone has no such file). Require a public https URL.
+  const isLocal = location.protocol === "file:";
+  const defaultBase = isLocal ? "" : (location.origin + location.pathname);
+
+  const state = {
+    titular:"", banco:"BROU", cuenta:"", sucursal:"", moneda:"UYU",
+    alias:"", monto:"", concepto:"", nota:"", base: defaultBase
+  };
+
+  const wrap = el("div",{class:"wrap"});
+
+  // header
+  wrap.append(
+    el("div",{class:"gen-head"},
+      el("span",{class:"eyebrow"},"Cobro QR · Uruguay"),
+      el("h1",{},"Que te transfieran sin dictar el número de cuenta."),
+      el("p",{class:"muted"},"Completá tus datos una vez, generá un QR y compartilo. Quien te paga lo escanea, copia los datos con un toque y hace la transferencia desde su propio banco.")
+    )
+  );
+
+  const grid = el("div",{class:"grid"});
+
+  /* ----- left: form ----- */
+  const form = el("div",{class:"panel pad"});
+
+  const fieldText=(key,label,opts={})=>{
+    const inp=el("input",{
+      class: opts.mono?"mono":"", type: opts.type||"text",
+      inputmode: opts.inputmode||"text",
+      placeholder: opts.ph||"", value: state[key],
+      "aria-label": label,
+      oninput:e=>{ state[key]=e.target.value; refresh(); }
+    });
+    return el("div",{class:"field"},
+      el("label",{},label),
+      inp,
+      opts.hint?el("span",{class:"hint"},opts.hint):""
+    );
+  };
+
+  const bankSel = el("select",{"aria-label":"Banco",onchange:e=>{state.banco=e.target.value;refresh();}},
+    ...BANKS.map(b=>el("option",{value:b, ...(b===state.banco?{selected:"selected"}:{})},b)));
+  const curSel = el("select",{"aria-label":"Moneda",onchange:e=>{state.moneda=e.target.value;refresh();}},
+    el("option",{value:"UYU",selected:"selected"},"Pesos (UYU)"),
+    el("option",{value:"USD"},"Dólares (USD)"));
+
+  // Public address of the payer page — without it the QR can't work on phones.
+  const baseInput = el("input",{class:"mono",type:"url",inputmode:"url",
+    placeholder:"https://tu-sitio.com/cobro-qr-uy.html", value: state.base,
+    "aria-label":"Dirección pública de la página",
+    oninput:e=>{ state.base=e.target.value; refresh(); }});
+  const baseMsg = el("div",{class:"hint"});
+  const publishBlock = ()=> el("div",{class:"field"},
+    el("label",{},"Dirección pública donde publicaste esta página"),
+    baseInput, baseMsg);
+  const localBanner = el("div",{class:"banner"},
+    el("b",{},"Abriste el archivo desde tu disco."),
+    " Por eso el QR mostraría una ruta local (file:///C:/…) que no funciona en otros celulares y revela tu carpeta. Publicá esta misma página en un hosting gratuito y pegá su dirección abajo — ahí el QR funciona en cualquier teléfono.");
+
+  form.append(
+    fieldText("titular","Titular de la cuenta",{ph:"Nombre y apellido"}),
+    el("div",{class:"row2"},
+      el("div",{class:"field"}, el("label",{},"Banco / billetera"), bankSel),
+      el("div",{class:"field"}, el("label",{},"Moneda"), curSel)
+    ),
+    el("div",{class:"row2"},
+      fieldText("cuenta","Número de cuenta",{mono:true,inputmode:"numeric",ph:"110560606"}),
+      fieldText("sucursal","Sucursal (opcional)",{mono:true,inputmode:"numeric",ph:"00001"})
+    ),
+    fieldText("alias","Alias · celular (opcional)",{mono:true,inputmode:"tel",ph:"099 123 456",
+      hint:"Si tenés el celular asociado a tu cuenta, es la vía más rápida: quien paga transfiere al número y su banco muestra tu nombre."}),
+    el("div",{class:"row2"},
+      fieldText("monto","Monto (opcional)",{mono:true,inputmode:"decimal",ph:"445"}),
+      fieldText("concepto","Concepto (opcional)",{ph:"Alquiler, seña, etc."})
+    ),
+    fieldText("nota","Mensaje para quien paga (opcional)",{ph:"Gracias 🙌"}),
+    publishBlock()
+  );
+  if(isLocal) form.prepend(localBanner);
+
+  /* ----- right: QR preview ----- */
+  const qrFrame = el("div",{class:"qr-frame",id:"qrFrame"});
+  const qrEmpty = el("div",{class:"qr-empty"},"Completá al menos el titular y la cuenta (o el alias) para generar el QR.");
+  const linkInput = el("input",{readonly:"readonly","aria-label":"Link de cobro",value:""});
+  const copyLinkBtn = el("button",{class:"btn",onclick:async()=>{
+    if(!linkInput.value) return;
+    const ok=await copyText(linkInput.value);
+    copyLinkBtn.textContent = ok?"Copiado ✓":"Error";
+    setTimeout(()=>copyLinkBtn.textContent="Copiar link",1400);
+  }},"Copiar link");
+  const dlBtn = el("button",{class:"btn",onclick:downloadQR},"Descargar QR");
+  const previewBtn = el("button",{class:"btn btn-ghost",onclick:()=>{
+    if(linkInput.value) window.open(linkInput.value,"_blank");
+  }},"Ver como lo verá quien paga →");
+
+  const stage = el("div",{class:"qr-stage"},
+    el("div",{class:"qr-tile"},
+      el("div",{id:"qrSlot"}, qrEmpty),
+      el("div",{class:"qr-actions"}, el("span",{class:"btn btn-sol",style:"pointer-events:none"},"Compartí este QR"), dlBtn),
+      el("div",{class:"linkbox"}, linkInput, copyLinkBtn),
+      el("div",{style:"margin-top:8px;text-align:center"}, previewBtn),
+      el("div",{class:"note",html:'<b>Importante.</b> Esto reemplaza el dictado del número, no auto-completa la app del banco. Quien paga abre su banco y pega los datos (o usa el alias). El cobro llega como una transferencia común.'})
+    )
+  );
+
+  grid.append(form, stage);
+  wrap.append(grid);
+  app.append(wrap);
+
+  /* ----- live refresh ----- */
+  function currentPayload(){
+    const p={};
+    ["titular","banco","cuenta","sucursal","moneda","alias","monto","concepto","nota"].forEach(k=>{
+      if(state[k] && String(state[k]).trim()!=="") p[k]=String(state[k]).trim();
+    });
+    return p;
+  }
+  function isReady(p){ return p.titular && (p.cuenta || p.alias); }
+  function baseValid(){
+    const b=(state.base||"").trim();
+    return /^https?:\/\/.+/i.test(b) && !/^file:/i.test(b);
+  }
+  function buildUrl(p){
+    const base=(state.base||"").trim().replace(/#.*$/,"");
+    return base + "#p=" + encodePayload(p);
+  }
+  function refresh(){
+    const p=currentPayload();
+    const slot=document.getElementById("qrSlot");
+    const dataOK=isReady(p), baseOK=baseValid();
+
+    // address field feedback
+    if(!(state.base||"").trim()){
+      baseMsg.textContent = isLocal
+        ? "Publicá esta página (hosting gratis) y pegá su dirección, para que el QR funcione en cualquier celular."
+        : "Pegá la dirección pública donde está publicada esta página.";
+      baseMsg.className="hint warn";
+    } else if(!baseOK){
+      baseMsg.textContent = "La dirección debe empezar con https:// y no puede ser un archivo local.";
+      baseMsg.className="hint warn";
+    } else {
+      baseMsg.textContent = "Listo — el QR y el link apuntan a esta dirección.";
+      baseMsg.className="hint ok";
+    }
+
+    if(!dataOK || !baseOK){
+      slot.innerHTML="";
+      const e2=qrEmpty.cloneNode(true);
+      e2.textContent = !dataOK
+        ? "Completá al menos el titular y la cuenta (o el alias)."
+        : "Falta la dirección pública de la página para generar un QR que funcione en otros celulares.";
+      slot.append(e2);
+      linkInput.value=""; return;
+    }
+    const url=buildUrl(p);
+    linkInput.value=url;
+    slot.innerHTML=""; slot.append(qrFrame);
+    qrFrame.innerHTML="";
+    new QRCode(qrFrame,{text:url,width:208,height:208,correctLevel:QRCode.CorrectLevel.M,
+      colorDark:"#14181f",colorLight:"#ffffff"});
+  }
+  function downloadQR(){
+    const cvs=qrFrame.querySelector("canvas");
+    if(!cvs){ return; }
+    const a=el("a",{}); a.download="cobro-qr.png"; a.href=cvs.toDataURL("image/png"); a.click();
+  }
+
+  refresh();
+}
+
+/* =======================  PAYER (COBRO) VIEW  ======================= */
+function renderPayer(raw){
+  let d;
+  try{ d=decodePayload(raw); }catch(e){ return renderInvalid(); }
+  if(!d || (!d.cuenta && !d.alias)) return renderInvalid();
+
+  document.title = "Transferile a " + (d.titular||"…");
+  document.body.classList.add("pay-body");
+  const app=document.getElementById("app");
+  app.innerHTML="";
+
+  const curLabel = d.moneda==="USD" ? "USD" : "$";
+  const wrap=el("div",{class:"pay-wrap"});
+
+  // header
+  wrap.append(el("div",{class:"pay-head"},
+    el("div",{class:"sol-dot"}),
+    el("h1",{}, "Transferile a"),
+    el("div",{class:"who"}, d.titular || "—")
+  ));
+
+  const card=el("div",{class:"card"});
+  card.append(el("div",{class:"strip"},
+    el("span",{class:"bank"}, d.banco||"Banco"),
+    el("span",{class:"cur"}, d.moneda==="USD"?"Dólares":"Pesos")
+  ));
+
+  if(d.monto){
+    card.append(el("div",{class:"amount"},
+      el("div",{class:"lbl"},"Monto a transferir"),
+      el("div",{class:"val"}, curLabel+" "+d.monto)
+    ));
+  }
+
+  // alias highlighted path
+  if(d.alias){
+    const cta=el("div",{class:"alias-cta"});
+    cta.append(el("div",{class:"datarow",style:"border:none;padding:0"},
+      el("div",{},
+        el("div",{class:"tag"},"Lo más rápido"),
+        el("div",{class:"v",style:"text-align:left;margin-top:4px"}, d.alias)
+      ),
+      copyChip(d.alias)
+    ));
+    cta.append(el("div",{class:"muted",style:"font-size:12px;margin-top:8px"},
+      "En tu app, elegí transferir por celular y pegá este número. Tu banco mostrará el nombre del titular antes de confirmar."));
+    card.append(cta);
+  }
+
+  // account data rows
+  const rows=el("div",{class:"rows"});
+  const addRow=(k,v)=>{ if(!v) return; rows.append(el("div",{class:"datarow"},
+    el("span",{class:"k"},k), el("span",{class:"v"},v), copyChip(v))); };
+  addRow("Cuenta", d.cuenta);
+  addRow("Sucursal", d.sucursal);
+  addRow("Titular", d.titular);
+  if(d.concepto) addRow("Concepto", d.concepto);
+
+  // copy-all
+  const allText = [
+    d.banco?("Banco: "+d.banco):"",
+    d.titular?("Titular: "+d.titular):"",
+    d.cuenta?("Cuenta: "+d.cuenta):"",
+    d.sucursal?("Sucursal: "+d.sucursal):"",
+    d.alias?("Celular/alias: "+d.alias):"",
+    d.monto?("Monto: "+curLabel+" "+d.monto):"",
+    d.concepto?("Concepto: "+d.concepto):""
+  ].filter(Boolean).join("\n");
+  const allBtn=el("button",{class:"btn copyall",onclick:async()=>{
+    const ok=await copyText(allText);
+    allBtn.classList.toggle("ok",ok);
+    allBtn.textContent = ok?"Datos copiados ✓":"Copiar todos los datos";
+    setTimeout(()=>{allBtn.classList.remove("ok");allBtn.textContent="Copiar todos los datos";},1600);
+  }},"Copiar todos los datos");
+  rows.append(allBtn);
+  card.append(rows);
+  wrap.append(card);
+
+  // steps
+  wrap.append(el("ol",{class:"steps"},
+    el("li",{}, d.alias?"Abrí la app de tu banco y entrá a transferir.":"Abrí la app de tu banco y entrá a “Transferir a cuenta de terceros”."),
+    el("li",{}, d.alias?"Transferí por número de celular (lo más simple) o pegá el número de cuenta.":"Pegá el número de cuenta y la sucursal de arriba."),
+    el("li",{},"Verificá el nombre del titular, ingresá el monto y confirmá.")
+  ));
+
+  if(d.nota) wrap.append(el("div",{class:"pay-foot"}, "“"+d.nota+"”"));
+  wrap.append(el("div",{class:"pay-foot"},
+    el("a",{href:location.pathname},"Crear mi propio QR de cobro")));
+
+  app.append(wrap);
+}
+
+function copyChip(text){
+  const b=el("button",{class:"copy",onclick:async()=>{
+    const ok=await copyText(text);
+    if(ok){ b.classList.add("ok"); b.textContent="Copiado ✓";
+      setTimeout(()=>{b.classList.remove("ok");b.textContent="Copiar";},1300); }
+  }},"Copiar");
+  return b;
+}
+
+function renderInvalid(){
+  document.body.classList.add("pay-body");
+  document.getElementById("app").innerHTML="";
+  document.getElementById("app").append(el("div",{class:"invalid"},
+    el("h1",{},"Enlace de cobro inválido"),
+    el("p",{class:"muted"},"Este QR o enlace está incompleto o dañado. Pedile a quien te lo compartió que genere uno nuevo."),
+    el("p",{style:"margin-top:18px"}, el("a",{href:location.pathname},"Crear un QR de cobro →"))
+  ));
+}
+
+/* =======================  ROUTER  ======================= */
+function route(){
+  const m = location.hash.match(/p=([^&]+)/);
+  if(m && m[1]) renderPayer(m[1]);
+  else renderGenerator();
+}
+route();
+</script>
+</body>
+</html>
